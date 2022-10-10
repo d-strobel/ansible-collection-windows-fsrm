@@ -10,6 +10,7 @@ $spec = @{
     options             = @{
         smtp_server         = @{ type = "str" }
         admin_email_address = @{ type = "str" }
+        from_email_address  = @{ type = "str" }
         state               = @{ type = "str"; choices = "absent", "present"; default = "present" }
     }
     supports_check_mode = $true
@@ -86,14 +87,36 @@ if ($module.Params.admin_email_address) {
             Set-FsrmSetting -AdminEmailAddress $null -WhatIf:$module.CheckMode
         }
         catch {
-            $module.FailJson("Failed to remove SMTP-Server.", $_)
+            $module.FailJson("Failed to remove 'Admin E-Mail address'.", $_)
+        }
+        $module.Result.changed = $true
+    }
+}
+
+# From email
+if ($module.Params.from_email_address) {
+    if (($fsrmSettings.FromEmailAddress -ne $module.Params.from_email_address) -and $present) {
+        try {
+            Set-FsrmSetting -FromEmailAddress $module.Params.from_email_address -WhatIf:$module.CheckMode
+        }
+        catch {
+            $module.FailJson("Failed to set From E-Mail address to '$($module.Params.from_email_address)'.", $_)
+        }
+        $module.Result.changed = $true
+    }
+    elseif (-not $present) {
+        try {
+            Set-FsrmSetting -FromEmailAddress $null -WhatIf:$module.CheckMode
+        }
+        catch {
+            $module.FailJson("Failed to remove 'From E-Mail address'.", $_)
         }
         $module.Result.changed = $true
     }
 }
 
 # Always return all settings that can be set
-$module.Result.settings = Get-FsrmSetting | Select-Object -Property AdminEmailAddress, SmtpServer
+$module.Result.settings = Get-FsrmSetting | Select-Object -Property AdminEmailAddress, SmtpServer, FromEmailAddress
 
 # Return
 $module.ExitJson()

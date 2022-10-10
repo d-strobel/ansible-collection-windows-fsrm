@@ -25,15 +25,28 @@ options:
     description:
     - The default email address to use for notifications.
     type: str
+  from_email_address:
+    description:
+    - The email address from which the server sends the notifications.
+    type: str
 author:
 - Dustin Strobel (@d-strobel)
 '''
 
 EXAMPLES = r'''
-- name: Set an environment variable for all users
+- name: Set the smtp server and the admin email address
   d_strobel.windows_fsrm.win_fsrm_setting:
     smtp_server: smtp.example.intern
     admin_email_address: fsrm-monitoring@example.com
+    state: present
+- name: Remove the smtp server
+  d_strobel.windows_fsrm.win_fsrm_setting:
+    smtp_server: smtp.example.intern
+    state: absent
+- name: Set the admin and from email address
+  d_strobel.windows_fsrm.win_fsrm_setting:
+    admin_email_address: fsrm-monitoring@example.com
+    from_email_address: fsrm@server.intern
     state: present
 '''
 
