@@ -1,2 +1,3 @@
-# ansible-collection-windows-fsrm
-Ansible collection for file server resource manager (fsrm)
+# Ansible Collection - windows.fsrm
+
+Ansible collection for Windows File Server Resource Manager (FSRM).
