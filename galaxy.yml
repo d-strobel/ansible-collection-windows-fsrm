@@ -1,0 +1,17 @@
+namespace: windows
+name: fsrm
+version: 0.1.0
+readme: README.md
+authors:
+  - Dustin Strobel @d-strobel
+description: |
+  Ansible collection for Windows File Server Resource Manager (FSRM)
+license_file: LICENSE
+tags:
+  - windows
+dependencies: {}
+repository: https://github.com/d-strobel/ansible-collection-windows-fsrm
+documentation: https://github.com/d-strobel/ansible-collection-windows-fsrm
+homepage: https://github.com/d-strobel/ansible-collection-windows-fsrm
+issues: https://github.com/d-strobel/ansible-collection-windows-fsrm/issues
+build_ignore: []
