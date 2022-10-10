@@ -31,8 +31,15 @@ author:
 
 EXAMPLES = r'''
 - name: Set an environment variable for all users
-  windows.win_fsrm_setting:
+  d_strobel.windows_fsrm.win_fsrm_setting:
     smtp_server: smtp.example.intern
     admin_email_address: fsrm-monitoring@example.com
     state: present
+'''
+
+RETURN = r'''
+settings:
+  description: returns all settings that can be set by the module.
+  returned: always
+  type: dict
 '''

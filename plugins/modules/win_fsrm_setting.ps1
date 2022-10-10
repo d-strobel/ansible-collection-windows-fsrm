@@ -92,5 +92,8 @@ if ($module.Params.admin_email_address) {
     }
 }
 
+# Always return all settings that can be set
+$module.Result.settings = Get-FsrmSetting | Select-Object -Property AdminEmailAddress, SmtpServer
+
 # Return
 $module.ExitJson()
