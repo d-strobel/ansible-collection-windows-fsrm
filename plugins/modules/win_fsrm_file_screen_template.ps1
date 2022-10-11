@@ -7,7 +7,7 @@
 #AnsibleRequires -PowerShell Ansible.ModuleUtils.AddType
 
 $spec = @{
-    options = @{
+    options             = @{
         name          = @{ type = "str"; required = $true }
         description   = @{ type = "str" }
         active_check  = @{ type = "bool"; default = $true }
@@ -18,11 +18,9 @@ $spec = @{
         email_body    = @{ type = "str" }
         state         = @{ type = "str"; choices = "absent", "present"; default = "present" }
     }
-    required_if = @(
-        @("state", "present", @("file_group"))
-    )
-    required_together = @(
-        @("email_notify", "email_to", "email_subject", "email_body")
+    required_if         = @(
+        , @("state", "present", @("file_group"))
+        , @("email_notify", $true, @("email_to", "email_subject", "email_body"))
     )
     supports_check_mode = $true
 }
@@ -31,16 +29,6 @@ $module = [Ansible.Basic.AnsibleModule]::Create($args, $spec)
 
 # ErrorAction
 $ErrorActionPreference = 'Stop'
-
-# Functions
-function New-FsrmActionEmail {
-    return New-FsrmAction `
-        -Type Email `
-        -MailTo $module.Params.email_to `
-        -Subject $module.Params.email_subject `
-        -Body $module.Params.body `
-        -RunLimitInterval 120
-}
 
 # State
 if ($module.Params.state -eq "present") {
@@ -65,40 +53,6 @@ catch {
 # Get template
 $fileScreenTemplate = Get-FsrmFileScreenTemplate -Name $module.Params.name -ErrorAction SilentlyContinue
 
-if ($null -eq $fileScreenTemplate -and $present) {
-    if ($module.Params.email_notify) {
-        try {
-            New-FsrmFileScreenTemplate `
-                -Name $templateName `
-                -IncludeGroup $includedGroups `
-                -Notification $(New-FsrmActionEmail) `
-                -Active:$module.Params.active_check `
-                -WhatIf:$module.CheckMode `
-            | Out-Null
-        }
-        catch {
-            $module.FailJson("Failed to create file screen template '$($module.Params.name)'.", $_)
-        }
-        $module.Result.changed = $true
-        $module.ExitJson()
-    }
-    else {
-        try {
-            New-FsrmFileScreenTemplate `
-                -Name $templateName `
-                -IncludeGroup $includedGroups `
-                -Active:$moduel.Params.active_check `
-                -WhatIf:$module.CheckMode `
-            | Out-Null
-        }
-        catch {
-            $module.FailJson("Failed to create file screen template '$($module.Params.name)'.", $_)
-        }
-        $module.Result.changed = $true
-        $module.ExitJson()
-    }
-}
-
 # Remove template if state == absent
 if ($fileScreenTemplate -and -not $present) {
     try {
@@ -112,6 +66,68 @@ if ($fileScreenTemplate -and -not $present) {
     }
     $module.Result.changed = $true
     $module.ExitJson()
+}
+
+# Create template if neccessary
+if ($null -eq $fileScreenTemplate -and $present) {
+    try {
+        New-FsrmFileScreenTemplate `
+            -Name $module.Params.name `
+            -IncludeGroup $module.Params.file_group `
+            -Active:$module.Params.active_check `
+            -WhatIf:$module.CheckMode `
+        | Out-Null
+    }
+    catch {
+        $module.FailJson("Failed to create file screen template '$($module.Params.name)'.", $_)
+    }
+    $module.Result.changed = $true
+}
+
+# Create actions
+if ($module.Params.email_notify) {
+    try {
+        $fsrmActionMail = New-FsrmAction `
+            -Type Email `
+            -MailTo $module.Params.email_to `
+            -Subject $module.Params.email_subject `
+            -Body $module.Params.email_body `
+            -RunLimitInterval 120
+    }
+    catch {
+        $module.FailJson("Failed to create email action.", $_)
+    }
+
+    # Set template with email action
+    if (-not $fileScreenTemplate) {
+        try {
+            Set-FsrmFileScreenTemplate `
+                -Name $module.Params.name `
+                -Notification $fsrmActionMail `
+                -WhatIf:$module.CheckMode
+        }
+        catch {
+            $module.FailJson("Failed to set template '$($module.Params.name)'.", $_)
+        }
+        $module.Result.changed = $true
+    }
+    else {
+        if (($fileScreenTemplate.Notification.Subject -ne $module.Params.email_subject) `
+                -or ($fileScreenTemplate.Notification.Body -ne $module.Params.email_body) `
+                -or ($fileScreenTemplate.Notification.MailTo -ne $module.Params.email_to)
+        ) {
+            try {
+                Set-FsrmFileScreenTemplate `
+                    -Name $module.Params.name `
+                    -Notification $fsrmActionMail `
+                    -WhatIf:$module.CheckMode
+            }
+            catch {
+                $module.FailJson("Failed to set template '$($module.Params.name)'.", $_)
+            }
+            $module.Result.changed = $true
+        }
+    }
 }
 
 # Return
